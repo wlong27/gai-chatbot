@@ -1,13 +1,15 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
-import os
-
 # Load environment variables from .env file
 load_dotenv()
+import os
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+
+
 
 # Set your OpenAI API key
-openai.api_key = os.getenv('OPENAI_API_KEY')
 
 st.title("LLM Chatbot")
 
@@ -15,14 +17,12 @@ if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
 def generate_response(prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response.choices[0].message['content'].strip()
+    response = client.chat.completions.create(model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": prompt}
+    ])
+    return response.choices[0].message.content.strip()
 
 def main():
     st.header("Chat with the bot")
@@ -36,9 +36,9 @@ def main():
 
     for message in st.session_state['messages']:
         if message['role'] == 'user':
-            st.text_area("You:", value=message['content'], key=f"user_{message['content']}", height=50)
+            st.text_area("You:", value=message['content'], key=f"user_{message['content']}", height=70)
         else:
-            st.text_area("Bot:", value=message['content'], key=f"bot_{message['content']}", height=50)
+            st.text_area("Bot:", value=message['content'], key=f"bot_{message['content']}", height=70)
 
 if __name__ == "__main__":
     main()
