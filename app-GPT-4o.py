@@ -1,44 +1,48 @@
 import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
+import os
+
 # Load environment variables from .env file
 load_dotenv()
-import os
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
+# Initialize OpenAI client
+client = OpenAI()  # It will automatically use OPENAI_API_KEY from environment
 
+st.title("💬 LLM Chatbot")
 
-
-# Set your OpenAI API key
-
-st.title("LLM Chatbot")
-
-if 'messages' not in st.session_state:
-    st.session_state['messages'] = []
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 def generate_response(prompt):
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": prompt}
-    ])
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
     return response.choices[0].message.content.strip()
 
-def main():
-    st.header("Chat with the bot")
-    user_input = st.text_input("You:", key="input")
+# Display chat messages from history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-    if st.button("Send"):
-        if user_input:
-            st.session_state['messages'].append({"role": "user", "content": user_input})
-            response = generate_response(user_input)
-            st.session_state['messages'].append({"role": "bot", "content": response})
-
-    for message in st.session_state['messages']:
-        if message['role'] == 'user':
-            st.text_area("You:", value=message['content'], key=f"user_{message['content']}", height=70)
-        else:
-            st.text_area("Bot:", value=message['content'], key=f"bot_{message['content']}", height=70)
-
-if __name__ == "__main__":
-    main()
+# Accept user input
+if prompt := st.chat_input("What would you like to know?"):
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    # Display user message in chat message container
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    # Generate and display assistant response
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            response = generate_response(prompt)
+            st.markdown(response)
+    
+    # Add assistant response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": response})
